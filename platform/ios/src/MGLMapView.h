@@ -934,8 +934,8 @@ MGL_EXPORT
 - (void)setVisibleCoordinateBounds:(MGLCoordinateBounds)bounds animated:(BOOL)animated;
 
 /**
- Changes the receiver’s viewport to fit the given coordinate bounds and
- optionally some additional padding on each side.
+ Changes the receiver’s viewport to fit the given coordinate bounds with some
+ additional padding on each side.
 
  To bring both sides of the antimeridian or international date line into view,
  specify some longitudes less than −180 degrees or greater than 180 degrees. For
@@ -954,8 +954,8 @@ MGL_EXPORT
 - (void)setVisibleCoordinateBounds:(MGLCoordinateBounds)bounds edgePadding:(UIEdgeInsets)insets animated:(BOOL)animated;
 
 /**
- Changes the receiver’s viewport to fit the given coordinate bounds and
- optionally some additional padding on each side and a completion handler.
+ Changes the receiver’s viewport to fit the given coordinate bounds with some
+ additional padding on each side, optionally calling a completion handler.
 
  To bring both sides of the antimeridian or international date line into view,
  specify some longitudes less than −180 degrees or greater than 180 degrees. For
@@ -972,8 +972,8 @@ MGL_EXPORT
 - (void)setVisibleCoordinateBounds:(MGLCoordinateBounds)bounds edgePadding:(UIEdgeInsets)insets animated:(BOOL)animated completionHandler:(nullable void (^)(void))completion;
 
 /**
- Changes the receiver’s viewport to fit all of the given coordinates and
- optionally some additional padding on each side.
+ Changes the receiver’s viewport to fit all of the given coordinates with some
+ additional padding on each side.
 
  To bring both sides of the antimeridian or international date line into view,
  specify some longitudes less than −180 degrees or greater than 180 degrees. For
@@ -991,8 +991,8 @@ MGL_EXPORT
 - (void)setVisibleCoordinates:(const CLLocationCoordinate2D *)coordinates count:(NSUInteger)count edgePadding:(UIEdgeInsets)insets animated:(BOOL)animated;
 
 /**
- Changes the receiver’s viewport to fit all of the given coordinates and
- optionally some additional padding on each side.
+ Changes the receiver’s viewport to fit all of the given coordinates with some
+ additional padding on each side, optionally calling a completion handler.
 
  To bring both sides of the antimeridian or international date line into view,
  specify some longitudes less than −180 degrees or greater than 180 degrees. For
@@ -1198,8 +1198,8 @@ MGL_EXPORT
 - (MGLMapCamera *)cameraThatFitsCoordinateBounds:(MGLCoordinateBounds)bounds;
 
 /**
- Returns the camera that best fits the given coordinate bounds, optionally with
- some additional padding on each side.
+ Returns the camera that best fits the given coordinate bounds with some
+ additional padding on each side.
 
  @param bounds The coordinate bounds to fit to the receiver’s viewport.
  @param insets The minimum padding (in screen points) that would be visible
@@ -1216,8 +1216,9 @@ MGL_EXPORT
 - (MGLMapCamera *)cameraThatFitsCoordinateBounds:(MGLCoordinateBounds)bounds edgePadding:(UIEdgeInsets)insets;
 
 /**
- Returns the camera that best fits the given coordinate bounds, with the specified camera,
- optionally with some additional padding on each side.
+ Returns the camera that best fits the given coordinate bounds with some
+ additional padding on each side, matching an existing camera as much as
+ possible.
 
  @param camera The camera that the return camera should adhere to. All values
     on this camera will be manipulated except for pitch and direction.
@@ -1236,8 +1237,8 @@ MGL_EXPORT
 - (MGLMapCamera *)camera:(MGLMapCamera *)camera fittingCoordinateBounds:(MGLCoordinateBounds)bounds edgePadding:(UIEdgeInsets)insets;
 
 /**
- Returns the camera that best fits the given shape, with the specified camera,
- optionally with some additional padding on each side.
+ Returns the camera that best fits the given shape with some additional padding
+ on each side, matching an existing camera as much as possible.
 
  @param camera The camera that the return camera should adhere to. All values
     on this camera will be manipulated except for pitch and direction.
@@ -1245,8 +1246,8 @@ MGL_EXPORT
  @param insets The minimum padding (in screen points) that would be visible
     around the returned camera object if it were set as the receiver’s camera.
  @return A camera object centered on the shape's center with zoom level as high
-    (close to the ground) as possible while still including the entire shape. The
-    initial camera's pitch and direction will be honored.
+    (close to the ground) as possible while still including the entire shape.
+    The initial camera's pitch and direction will be honored.
 
  @note The behavior of this method is undefined if called in response to
  `UIApplicationWillTerminateNotification`; you may receive a `nil` return value
@@ -1255,16 +1256,17 @@ MGL_EXPORT
 - (MGLMapCamera *)camera:(MGLMapCamera *)camera fittingShape:(MGLShape *)shape edgePadding:(UIEdgeInsets)insets;
 
 /**
- Returns the camera that best fits the given shape, with the specified direction,
- optionally with some additional padding on each side.
+ Returns the camera that best fits the given shape with some additional padding
+ on each side while looking in the specified direction.
 
  @param shape The shape to fit to the receiver’s viewport.
- @param direction The direction of the viewport, measured in degrees clockwise from true north.
+ @param direction The direction of the viewport, measured in degrees clockwise
+    from true north.
  @param insets The minimum padding (in screen points) that would be visible
     around the returned camera object if it were set as the receiver’s camera.
  @return A camera object centered on the shape's center with zoom level as high
-    (close to the ground) as possible while still including the entire shape. The
-    camera object uses the current pitch.
+    (close to the ground) as possible while still including the entire shape.
+    The camera object uses the current pitch.
 
  @note The behavior of this method is undefined if called in response to
  `UIApplicationWillTerminateNotification`; you may receive a `nil` return value
@@ -1273,7 +1275,7 @@ MGL_EXPORT
 - (MGLMapCamera *)cameraThatFitsShape:(MGLShape *)shape direction:(CLLocationDirection)direction edgePadding:(UIEdgeInsets)insets;
 
 /**
- Returns the point in this view’s coordinate system on which to "anchor" in
+ Returns the point in this view’s coordinate system on which to “anchor” in
  response to a user-initiated gesture.
 
  For example, a pinch-to-zoom gesture would anchor the map at the midpoint of
