@@ -1,11 +1,19 @@
 #import <UIKit/UIKit.h>
 
-#import "Mapbox.h"
 #import "MGLCameraChangeReason.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
+@protocol MGLAnnotation;
+@protocol MGLCalloutView;
+@class MGLAnnotationImage;
+@class MGLAnnotationView;
+@class MGLCircle;
+@class MGLMapCamera;
 @class MGLMapView;
+@class MGLPolygon;
+@class MGLPolyline;
+@class MGLShape;
 
 /**
  The `MGLMapViewDelegate` protocol defines a set of optional methods that you
@@ -441,6 +449,21 @@ NS_ASSUME_NONNULL_BEGIN
  `MGLPolygon` at runtime.
  */
 - (UIColor *)mapView:(MGLMapView *)mapView fillColorForPolygonAnnotation:(MGLPolygon *)annotation;
+
+/**
+ Returns the color to use when rendering the fill of a circle annotation.
+
+ The default fill color is the selected menu item color. If a pattern color is
+ specified, the result is undefined.
+
+ Opacity may be set by specifying an alpha component. The default alpha value is
+ `1.0` and results in a completely opaque shape.
+
+ @param mapView The map view rendering the polygon annotation.
+ @param annotation The annotation being rendered.
+ @return The circle’s fill color.
+ */
+- (UIColor *)mapView:(MGLMapView *)mapView fillColorForCircleAnnotation:(MGLCircle *)annotation;
 
 /**
  Returns the line width in points to use when rendering the outline of a

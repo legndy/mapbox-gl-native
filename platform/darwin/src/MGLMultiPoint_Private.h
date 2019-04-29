@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class MGLPolygon;
 @class MGLPolyline;
+@class MGLCircle;
 
 @protocol MGLMultiPointDelegate;
 
@@ -37,6 +38,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /** Returns the fill color object for the given annotation. */
 - (mbgl::Color)fillColorForPolygonAnnotation:(MGLPolygon *)annotation;
+
+/** Returns the fill color object for the given annotation. */
+- (mbgl::Color)fillColorForCircleAnnotation:(MGLCircle *)annotation;
 
 /** Returns the stroke width object for the given annotation. */
 - (CGFloat)lineWidthForPolylineAnnotation:(MGLPolyline *)annotation;

@@ -21,6 +21,7 @@
 #import "MGLMapCamera.h"
 #import "MGLPolygon.h"
 #import "MGLPolyline.h"
+#import "MGLCircle_Private.h"
 #import "MGLAnnotationImage.h"
 #import "MGLMapViewDelegate.h"
 #import "MGLImageSource.h"
@@ -194,7 +195,8 @@ public:
 
     BOOL _delegateHasAlphasForShapeAnnotations;
     BOOL _delegateHasStrokeColorsForShapeAnnotations;
-    BOOL _delegateHasFillColorsForShapeAnnotations;
+    BOOL _delegateHasFillColorsForPolygonAnnotations;
+    BOOL _delegateHasFillColorsForCircleAnnotations;
     BOOL _delegateHasLineWidthsForShapeAnnotations;
 
     /// True if the current process is the Interface Builder designable
@@ -566,7 +568,8 @@ public:
         [self adjustContentInsets];
     } else if ([keyPath isEqualToString:@"coordinate"] &&
                [object conformsToProtocol:@protocol(MGLAnnotation)] &&
-               ![object isKindOfClass:[MGLMultiPoint class]]) {
+               ![object isKindOfClass:[MGLMultiPoint class]] &&
+               ![object isKindOfClass:[MGLCircle class]]) {
         id <MGLAnnotation> annotation = object;
         MGLAnnotationTag annotationTag = (MGLAnnotationTag)(NSUInteger)context;
         // We can get here because a subclass registered itself as an observer
@@ -581,8 +584,11 @@ public:
             _mbglMap->updateAnnotation(annotationTag, mbgl::SymbolAnnotation { point, annotationImage.styleIconIdentifier.UTF8String ?: "" });
             [self updateAnnotationCallouts];
         }
-    } else if ([keyPath isEqualToString:@"coordinates"] &&
-               [object isKindOfClass:[MGLMultiPoint class]]) {
+    } else if (([keyPath isEqualToString:@"coordinates"] &&
+                [object isKindOfClass:[MGLMultiPoint class]]) ||
+               (([keyPath isEqualToString:@"coordinate"] ||
+                 [keyPath isEqualToString:@"radius"]) &&
+                [object isKindOfClass:[MGLCircle class]])) {
         MGLMultiPoint *annotation = object;
         MGLAnnotationTag annotationTag = (MGLAnnotationTag)(NSUInteger)context;
         // We can get here because a subclass registered itself as an observer
@@ -609,7 +615,8 @@ public:
     // hot loop, namely the annotation style methods.
     _delegateHasAlphasForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:alphaForShapeAnnotation:)];
     _delegateHasStrokeColorsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:strokeColorForShapeAnnotation:)];
-    _delegateHasFillColorsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:fillColorForPolygonAnnotation:)];
+    _delegateHasFillColorsForPolygonAnnotations = [_delegate respondsToSelector:@selector(mapView:fillColorForPolygonAnnotation:)];
+    _delegateHasFillColorsForCircleAnnotations = [_delegate respondsToSelector:@selector(mapView:fillColorForCircleAnnotation:)];
     _delegateHasLineWidthsForShapeAnnotations = [_delegate respondsToSelector:@selector(mapView:lineWidthForPolylineAnnotation:)];
 
 #pragma clang diagnostic push
@@ -1979,6 +1986,19 @@ public:
             _annotationTagsByAnnotation[annotation] = annotationTag;
 
             [(NSObject *)annotation addObserver:self forKeyPath:@"coordinates" options:0 context:(void *)(NSUInteger)annotationTag];
+        } else if ([annotation isKindOfClass:[MGLCircle class]]) {
+            // The circle knows how to style itself (with the map view’s help).
+            MGLCircle *circle = (MGLCircle *)annotation;
+            
+            _isChangingAnnotationLayers = YES;
+            MGLAnnotationTag annotationTag = _mbglMap->addAnnotation([circle annotationObjectWithDelegate:self]);
+            MGLAnnotationContext context;
+            context.annotation = annotation;
+            _annotationContextsByAnnotationTag[annotationTag] = context;
+            _annotationTagsByAnnotation[annotation] = annotationTag;
+            
+            [(NSObject *)annotation addObserver:self forKeyPath:@"coordinate" options:0 context:(void *)(NSUInteger)annotationTag];
+            [(NSObject *)annotation addObserver:self forKeyPath:@"radius" options:0 context:(void *)(NSUInteger)annotationTag];
         } else if (![annotation isKindOfClass:[MGLMultiPolyline class]]
                    && ![annotation isKindOfClass:[MGLMultiPolygon class]]
                    && ![annotation isKindOfClass:[MGLShapeCollection class]]
@@ -2110,6 +2130,9 @@ public:
             [(NSObject *)annotation removeObserver:self forKeyPath:@"coordinate" context:(void *)(NSUInteger)annotationTag];
         } else if ([annotation isKindOfClass:[MGLMultiPoint class]]) {
             [(NSObject *)annotation removeObserver:self forKeyPath:@"coordinates" context:(void *)(NSUInteger)annotationTag];
+        }
+        if ([annotation isKindOfClass:[MGLCircle class]]) {
+            [(NSObject *)annotation removeObserver:self forKeyPath:@"radius" context:(void *)(NSUInteger)annotationTag];
         }
 
         _isChangingAnnotationLayers = YES;
@@ -2477,14 +2500,12 @@ public:
 
     mbgl::LatLngBounds bounds = mbgl::LatLngBounds::empty();
 
-    for (id <MGLAnnotation> annotation in annotations)
-    {
-        if ([annotation conformsToProtocol:@protocol(MGLOverlay)])
-        {
+    for (id <MGLAnnotation> annotation in annotations) {
+        if ([annotation conformsToProtocol:@protocol(MGLOverlay)]) {
             bounds.extend(MGLLatLngBoundsFromCoordinateBounds(((id <MGLOverlay>)annotation).overlayBounds));
-        }
-        else
-        {
+        } else if ([annotation isKindOfClass:[MGLCircle class]]) {
+            bounds.extend(MGLLatLngBoundsFromCoordinateBounds(((MGLCircle *)annotation).coordinateBounds));
+        } else {
             bounds.extend(MGLLatLngFromLocationCoordinate2D(annotation.coordinate));
         }
     }
@@ -2635,8 +2656,15 @@ public:
 }
 
 - (mbgl::Color)fillColorForPolygonAnnotation:(MGLPolygon *)annotation {
-    NSColor *color = (_delegateHasFillColorsForShapeAnnotations
+    NSColor *color = (_delegateHasFillColorsForPolygonAnnotations
                       ? [self.delegate mapView:self fillColorForPolygonAnnotation:annotation]
+                      : [NSColor selectedMenuItemColor]);
+    return color.mgl_color;
+}
+
+- (mbgl::Color)fillColorForCircleAnnotation:(MGLCircle *)annotation {
+    NSColor *color = (_delegateHasFillColorsForCircleAnnotations
+                      ? [self.delegate mapView:self fillColorForCircleAnnotation:annotation]
                       : [NSColor selectedMenuItemColor]);
     return color.mgl_color;
 }
